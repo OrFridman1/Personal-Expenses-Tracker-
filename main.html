@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css" />
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="http://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.bundle.js"></script>
+    <script src="utils.js"></script>
+    <script src="piechart.js"></script>
+    <title>IndexedDB Simple Demo</title>
+
+
+    <script type="text/javascript">
+        //creating our demo namespace
+        var demo = {};
+        var amounts = [0,0,0,0,0,0,0];
+        //different web browsers might have different implementations
+        window.indexedDB = window.indexedDB || window.mozIndexedDB ||
+            window.webkitIndexedDB || window.msIndexedDB;
+
+        //checking whether the web browser supports the IndexedDB database
+        //if it doesn't then showing a message saying so
+        if (!window.indexedDB) {
+            console.log("The web browser doesn't support IndexedDB")
+        }
+        //the data we want to store in our indexeddb database
+        demo.data = [
+            {  catagory: "food", amount: 50 },
+            {  catagory: "transportation", amount: 40 },
+            {  catagory: "clothes", amount: 30 }
+        ];
+
+        demo.db;
+        demo.request = window.indexedDB.open("expanse", 1);
+        console.log("indexedDB.open() was called");
+
+        demo.request.onerror = function(event) {
+            console.log("error: ");
+        };
+        console.log("onerror was assigned");
+
+        demo.request.onsuccess = function(event) {
+            demo.db = demo.request.result;
+            console.log("success: "+ demo.db);
+        };
+        console.log("onsuccess was assigned");
+
+        demo.request.onupgradeneeded = function(event) {
+            console.log("on upgrade");
+            var database = event.target.result; // event.target.result represent the db himself
+            var objectStore = database.createObjectStore("expanse", {keyPath: 'id', autoIncrement:true}); // create car objects array
+            for (var i in demo.data) {
+                objectStore.add(demo.data[i]);
+            }
+        }
+        console.log("onupgradedneeded was assigned");
+
+        function getCosts() {
+            var objectStore = demo.db.transaction("expanse").objectStore("expanse");
+            objectStore.openCursor().onsuccess = function(event) {
+                var cursor = event.target.result;
+                if (cursor) {
+                    console.log("readAllItems(): key=" + cursor.key + " catagory=" + cursor.value.catagory + " amount=" + cursor.value.amount);
+                    if(cursor.value.catagory == "food"){
+                        amounts[0] = cursor.value.amount + amounts[0];
+                    }
+                    if(cursor.value.catagory == "transportation"){
+                        amounts[1] = cursor.value.amount + amounts[1];
+                    }
+                    if(cursor.value.catagory == "clothes"){
+                        amounts[2] = cursor.value.amount + amounts[2];
+                    }
+                    if(cursor.value.catagory == "health"){
+                        amounts[3] = cursor.value.amount + amounts[3];
+                    }
+                    if(cursor.value.catagory == "education"){
+                        amounts[4] = cursor.value.amount + amounts[4];
+                    }
+                    if(cursor.value.catagory == "housing"){
+                        amounts[5] = cursor.value.amount + amounts[5];
+                    }
+                    if(cursor.value.catagory == "other"){
+                        amounts[6] = cursor.value.amount + amounts[6];
+                    }
+                    cursor.continue();
+                }
+                else {
+                    console.log("readAllItems(): no more entries!");
+                    localStorage.setItem("amounts0", amounts[0]);
+                    localStorage.setItem("amounts1", amounts[1]);
+                    localStorage.setItem("amounts2", amounts[2]);
+                    localStorage.setItem("amounts3", amounts[3]);
+                    localStorage.setItem("amounts4", amounts[4]);
+                    localStorage.setItem("amounts5", amounts[5]);
+                    localStorage.setItem("amounts6", amounts[6]);
+                }
+
+            };
+        }
+
+        function addCosts(catagory) {
+            var cost = parseInt(document.getElementById("amounts").value);
+            var request = demo.db.transaction(["expanse"], "readwrite")
+             .objectStore("expanse").add({catagory: catagory, amount: cost});
+             request.onsuccess = function (event) {
+             console.log("addItem(): the new data item was added to your database.");
+             };
+
+             request.onerror = function (event) {
+             console.log("addItem(): problem with adding the new data item to the database ");
+             };
+
+        }
+
+
+    </script>
+</head>
+
+<body>
+<div data-role="page"  data-theme="b">
+    <div data-role="header">
+        <h1>Manage Your Expanses</h1>
+    </div>
+    <div data-role="content">
+
+<form>
+    Enter your expanse:
+    <input type="number" id="amounts"><br><br>
+    <script>
+        var index = 15;
+    </script>
+    <center>
+    <button id="food" value="food" data-inline="true" onclick="addCosts('food')">food</button>
+    <button id="transportation" data-inline="true" value="transportation" onclick="addCosts('transportation')">transportation</button>
+    <button id="clothes" value="clothes" data-inline="true" onclick="addCosts('clothes')">clothes</button>
+    <button id="health" value="health" data-inline="true" onclick="addCosts('health')">health</button>
+    <button id="education" value="education" data-inline="true" onclick="addCosts('education')">education</button>
+    <button id="housing" value="housing" data-inline="true" onclick="addCosts('housing')">housing</button>
+    <button id="other" value="other" data-inline="true" onclick="addCosts('other')">other</button> <br>
+    <button onclick="getCosts()" data-inline="true">get all costs</button>
+    <a href="chart.html" data-role="button"  data-inline="true" data-transition="slide">Show Pie</a>
+    </center>
+    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+
+</form>
+    </div>
+
+    <div data-role="footer">
+        <a href="tel:972546655837">Please contact us in: 972546655837</a>
+    </div>
+</div>
+</body>
+</html>
